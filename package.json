@@ -1,0 +1,24 @@
+{
+  "name": "bases-view-pack",
+  "version": "0.1.0",
+  "description": "Reusable visual Bases views for the Life RPG vault.",
+  "main": "main.js",
+  "scripts": {
+    "dev": "node esbuild.config.mjs",
+    "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production"
+  },
+  "keywords": [
+    "obsidian",
+    "bases",
+    "life-rpg"
+  ],
+  "author": "William Bonfim",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.11.30",
+    "builtin-modules": "^3.3.0",
+    "esbuild": "^0.25.0",
+    "obsidian": "latest",
+    "typescript": "^5.4.5"
+  }
+}
