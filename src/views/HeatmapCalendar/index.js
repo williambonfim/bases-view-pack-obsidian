@@ -38,6 +38,8 @@ function registerHeatmapCalendarView(plugin, BasesViewClass, registerView) {
       const showDayLabels = toBooleanText(this.getOption("showDayLabels", "true"));
       const showMonthLabels = toBooleanText(this.getOption("showMonthLabels", "true"));
       const showYearLabels = toBooleanText(this.getOption("showYearLabels", "false"));
+      const shadeWeekends = toBooleanText(this.getOption("shadeWeekends", "false"));
+      const shadeMonths = toBooleanText(this.getOption("shadeMonths", "false"));
       const shape = this.getOption("shape", "rounded").toLowerCase();
       const layout = this.getOption("layout", "horizontal").toLowerCase();
       const viewMode = this.getOption("viewMode", "week-grid").toLowerCase();
@@ -84,8 +86,8 @@ function registerHeatmapCalendarView(plugin, BasesViewClass, registerView) {
       const start = startOfWeek(rangeStart);
       const end = endOfWeek(rangeEnd);
       const weekCount = diffWeeks(start, end) + 1;
-      const maxValue = maxValueOption || Math.max(1, ...Array.from(entriesByDate.values()).map((row) => row.value));
-      const minValue = minValueOption ?? 0;
+      const maxValue = trackType === "boolean" ? 1 : maxValueOption || Math.max(1, ...Array.from(entriesByDate.values()).map((row) => row.value));
+      const minValue = trackType === "boolean" ? 0 : minValueOption ?? 0;
       setResponsiveHeatmapVars(panel, this.rootEl, weekCount, showDayLabels, viewMode);
       if (typeof requestAnimationFrame === "function") {
         requestAnimationFrame(() => setResponsiveHeatmapVars(panel, this.rootEl, weekCount, showDayLabels, viewMode));
@@ -94,9 +96,9 @@ function registerHeatmapCalendarView(plugin, BasesViewClass, registerView) {
       const heatmap = lovely.createDiv({ cls: "bases-view-pack-heatmap" });
 
       if (viewMode === "month-grid") {
-        renderMonthGrid(heatmap, rangeStart, rangeEnd, entriesByDate, trackType, minValue, maxValue, showDayLabels, this.openEntry.bind(this));
+        renderMonthGrid(heatmap, rangeStart, rangeEnd, entriesByDate, trackType, minValue, maxValue, showDayLabels, { shadeWeekends, shadeMonths }, this.openEntry.bind(this));
         if (showLegend) renderLegend(lovely, entriesByDate);
-        renderDiagnostics(panel, rows, entriesByDate, dateProperty, trackProperty, days);
+        renderDiagnostics(panel, rows, entriesByDate, dateProperty, trackProperty, trackType, days);
         return;
       }
 
@@ -117,10 +119,10 @@ function registerHeatmapCalendarView(plugin, BasesViewClass, registerView) {
         body.addClass("is-no-day-labels");
       }
 
-      renderWeekGrid(body, start, end, entriesByDate, trackType, minValue, maxValue, viewMode, this.openEntry.bind(this));
+      renderWeekGrid(body, start, end, entriesByDate, trackType, minValue, maxValue, viewMode, { shadeWeekends, shadeMonths }, this.openEntry.bind(this));
 
       if (showLegend) renderLegend(lovely, entriesByDate);
-      renderDiagnostics(panel, rows, entriesByDate, dateProperty, trackProperty, days);
+      renderDiagnostics(panel, rows, entriesByDate, dateProperty, trackProperty, trackType, days);
     }
   }
 
@@ -135,6 +137,7 @@ function registerHeatmapCalendarView(plugin, BasesViewClass, registerView) {
         dropdownOption("trackType", "Track type", "number", {
           number: "Number",
           count: "Count entries",
+          boolean: "True / false",
         }),
       ]),
       optionGroup("Date Range", [
@@ -161,6 +164,8 @@ function registerHeatmapCalendarView(plugin, BasesViewClass, registerView) {
         toggleOption("showDayLabels", "Show weekday labels", true),
         toggleOption("showMonthLabels", "Show month labels", true),
         toggleOption("showYearLabels", "Show year labels", false),
+        toggleOption("shadeWeekends", "Shade weekends", false),
+        toggleOption("shadeMonths", "Shade alternating months", false),
         toggleOption("showLegend", "Show legend", true),
       ]),
       optionGroup("Value Range", [
@@ -190,7 +195,7 @@ function registerHeatmapCalendarView(plugin, BasesViewClass, registerView) {
   registerView(VIEW_HEATMAP_CALENDAR, spec);
 }
 
-function renderWeekGrid(parent, start, end, entriesByDate, trackType, minValue, maxValue, viewMode, openEntry) {
+function renderWeekGrid(parent, start, end, entriesByDate, trackType, minValue, maxValue, viewMode, displayOptions, openEntry) {
   const grid = parent.createDiv({ cls: "bases-view-pack-heatmap-grid bases-view-pack-heatmap-week-grid" });
   const weekCount = diffWeeks(start, end) + 1;
   for (let week = 0; week < weekCount; week += 1) {
@@ -207,8 +212,10 @@ function renderWeekGrid(parent, start, end, entriesByDate, trackType, minValue, 
       const clickable = Boolean(row);
       const isOverflow = row && row.value > maxValue;
       if (row) row.isOverflow = isOverflow;
+      const displayClasses = heatmapDisplayClasses(day, displayOptions);
+      const valueStateClass = row && !row.hasTrackedValue ? "is-no-value-entry" : "";
       const cell = column.createEl("button", {
-        cls: `bases-view-pack-heatmap-cell rounded-[4px] ${clickable ? "cursor-pointer" : ""} ${heatClass(intensity, isOverflow)}`,
+        cls: `bases-view-pack-heatmap-cell rounded-[4px] ${displayClasses} ${valueStateClass} ${clickable ? "cursor-pointer" : ""} ${heatClass(intensity, isOverflow)}`,
         attr: {
           title: buildHeatmapTitle(dayKey, row, trackType, minValue, maxValue),
           "aria-label": row ? buildHeatmapTitle(dayKey, row, trackType, minValue, maxValue) : `${dayKey}: no data`,
@@ -223,7 +230,7 @@ function renderWeekGrid(parent, start, end, entriesByDate, trackType, minValue, 
   }
 }
 
-function renderMonthGrid(parent, rangeStart, rangeEnd, entriesByDate, trackType, minValue, maxValue, showDayLabels, openEntry) {
+function renderMonthGrid(parent, rangeStart, rangeEnd, entriesByDate, trackType, minValue, maxValue, showDayLabels, displayOptions, openEntry) {
   const months = parent.createDiv({ cls: "bases-view-pack-heatmap-month-grid" });
   const start = new Date(rangeStart.getFullYear(), rangeStart.getMonth(), 1);
   const end = new Date(rangeEnd.getFullYear(), rangeEnd.getMonth(), 1);
@@ -249,8 +256,10 @@ function renderMonthGrid(parent, rangeStart, rangeEnd, entriesByDate, trackType,
       const clickable = Boolean(row);
       const isOverflow = row && row.value > maxValue;
       if (row) row.isOverflow = isOverflow;
+      const displayClasses = heatmapDisplayClasses(day, displayOptions, month);
+      const valueStateClass = row && !row.hasTrackedValue ? "is-no-value-entry" : "";
       const cell = grid.createEl("button", {
-        cls: `bases-view-pack-heatmap-cell rounded-[4px] ${!inMonth || !inRange ? "is-outside-range" : ""} ${clickable ? "cursor-pointer" : ""} ${heatClass(intensity, isOverflow)}`,
+        cls: `bases-view-pack-heatmap-cell rounded-[4px] ${displayClasses} ${valueStateClass} ${!inMonth || !inRange ? "is-outside-range" : ""} ${clickable ? "cursor-pointer" : ""} ${heatClass(intensity, isOverflow)}`,
         attr: {
           title: buildHeatmapTitle(dayKey, row, trackType, minValue, maxValue),
           "aria-label": row ? buildHeatmapTitle(dayKey, row, trackType, minValue, maxValue) : `${dayKey}: no data`,
@@ -263,6 +272,16 @@ function renderMonthGrid(parent, rangeStart, rangeEnd, entriesByDate, trackType,
       }
     }
   }
+}
+
+function heatmapDisplayClasses(day, displayOptions, displayMonth) {
+  const classes = [];
+  if (displayOptions.shadeWeekends && isWeekend(day)) classes.push("is-weekend");
+  if (displayOptions.shadeMonths) {
+    const monthIndex = displayMonth ? displayMonth.getMonth() : day.getMonth();
+    classes.push(monthIndex % 2 === 0 ? "is-month-even" : "is-month-odd");
+  }
+  return classes.join(" ");
 }
 
 function setResponsiveHeatmapVars(panel, rootEl, weekCount, showDayLabels, viewMode) {
@@ -333,16 +352,17 @@ function renderLegend(parent, entriesByDate) {
   legend.createSpan({ cls: "bases-view-pack-heatmap-legend-label text-xs", text: "More" });
 }
 
-function renderDiagnostics(parent, rows, entriesByDate, dateProperty, trackProperty, days) {
+function renderDiagnostics(parent, rows, entriesByDate, dateProperty, trackProperty, trackType, days) {
   if (!rows.length) {
     parent.createDiv({
       cls: "bases-view-pack-heatmap-note",
       text: `No dated rows found for ${dateProperty} in the selected ${days}-day range.`,
     });
   } else if (!Array.from(entriesByDate.values()).some((row) => row.value > 0)) {
+    const valueType = trackType === "boolean" ? "true values" : "numeric values";
     parent.createDiv({
       cls: "bases-view-pack-heatmap-note",
-      text: `Rows found, but ${trackProperty} has no numeric values in this range.`,
+      text: `Rows found, but ${trackProperty} has no ${valueType} in this range.`,
     });
   }
 }
@@ -356,14 +376,15 @@ function normalizeDate(value) {
 function aggregateHeatmapRows(rows, trackType) {
   const map = new Map();
   for (const row of rows) {
-    const numeric = toNumber(row.rawValue);
-    const nextValue = trackType === "count" ? 1 : numeric || 0;
+    const nextValue = heatmapTrackedValue(row.rawValue, trackType);
+    const hasTrackedValue = heatmapHasTrackedValue(row.rawValue, trackType);
     if (!map.has(row.date)) {
       map.set(row.date, {
         entry: row.entry,
         date: row.date,
         value: nextValue,
         count: 1,
+        hasTrackedValue,
         isOverflow: false,
       });
       continue;
@@ -371,19 +392,45 @@ function aggregateHeatmapRows(rows, trackType) {
     const current = map.get(row.date);
     current.value += nextValue;
     current.count += 1;
+    current.hasTrackedValue = current.hasTrackedValue || hasTrackedValue;
   }
   return map;
 }
 
+function heatmapTrackedValue(rawValue, trackType) {
+  if (trackType === "count") return 1;
+  if (trackType === "boolean") return parseHeatmapBoolean(rawValue) ? 1 : 0;
+  return toNumber(rawValue) || 0;
+}
+
+function parseHeatmapBoolean(value) {
+  const text = String(value || "").trim().toLowerCase();
+  if (!text) return false;
+  return ["true", "yes", "1", "y", "on", "done", "completed", "complete", "checked"].includes(text);
+}
+
+function heatmapHasTrackedValue(rawValue, trackType) {
+  if (trackType === "count") return true;
+  if (trackType === "boolean") return String(rawValue || "").trim() !== "";
+  return toNumber(rawValue) !== null;
+}
+
 function buildHeatmapTitle(dayKey, row, trackType, minValue, maxValue) {
   if (!row) return `${dayKey}: no data`;
-  const valueLabel = trackType === "count"
-    ? `${row.count} entr${row.count === 1 ? "y" : "ies"}`
-    : `value ${row.value}`;
+  const valueLabel = heatmapValueLabel(row, trackType);
   const extras = [];
   if (row.value < minValue) extras.push(`below min ${minValue}`);
   if (row.value > maxValue) extras.push(`above max ${maxValue}`);
   return `${row.date}: ${valueLabel}${extras.length ? `, ${extras.join(", ")}` : ""}`;
+}
+
+function heatmapValueLabel(row, trackType) {
+  if (trackType === "count") return `${row.count} entr${row.count === 1 ? "y" : "ies"}`;
+  if (trackType === "boolean") {
+    const label = `${row.value} true value${row.value === 1 ? "" : "s"}`;
+    return row.count > 1 ? `${label} across ${row.count} entries` : label;
+  }
+  return `value ${row.value}`;
 }
 
 function heatLevel(value, minValue, maxValue) {
@@ -497,6 +544,11 @@ function dateKey(date) {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+function isWeekend(date) {
+  const day = date.getDay();
+  return day === 0 || day === 6;
 }
 
 function heatClass(value, isOverflow) {

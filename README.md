@@ -44,7 +44,7 @@ Option groups:
 - `Data`
   - `dateProperty`: date source. Default: `file.name`.
   - `trackProperty`: value source for cell intensity. Default: `note.game_daily_score`.
-  - `trackType`: `number` or `boolean`.
+  - `trackType`: `number`, `count`, or `boolean`. Boolean mode treats true/yes/1/on/done/completed/checked values as active days and uses a 0/1 color scale.
 - `Date Range`
   - `referenceDate`: optional `YYYY-MM-DD` anchor date.
   - `startDate`: optional fixed start date.
@@ -56,6 +56,8 @@ Option groups:
   - `viewMode`: week grid, separated week grid, or month grid.
   - `showDayLabels`: shows MON, WED, and FRI on the left.
   - `showMonthLabels`, `showYearLabels`, `showLegend`.
+  - `shadeWeekends`: gives Saturday and Sunday cells a subtle background difference.
+  - `shadeMonths`: lightly staggers alternating month backgrounds so month boundaries are easier to see.
 - `Value Range`
   - `minValue`, `maxValue`.
 - `Appearance`
