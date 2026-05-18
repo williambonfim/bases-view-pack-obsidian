@@ -1,7 +1,7 @@
 {
   "id": "bases-view-pack",
   "name": "Bases View Pack",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "minAppVersion": "1.7.2",
   "description": "Reusable visual Bases views for the Life RPG vault.",
   "author": "William Bonfim",

@@ -106,7 +106,7 @@ function registerHeatmapCalendarView(plugin, BasesViewClass, registerView) {
         renderYearLabels(heatmap, start, weekCount, showDayLabels);
       }
       if (showMonthLabels) {
-        renderMonthLabels(heatmap, start, weekCount, showDayLabels);
+        renderMonthLabels(heatmap, start, weekCount, showDayLabels, rangeStart);
       }
 
       const body = heatmap.createDiv({ cls: "bases-view-pack-heatmap-body flex gap-2 items-center" });
@@ -320,7 +320,7 @@ function renderYearLabels(parent, start, weekCount, showDayLabels) {
   }
 }
 
-function renderMonthLabels(parent, start, weekCount, showDayLabels) {
+function renderMonthLabels(parent, start, weekCount, showDayLabels, rangeStart) {
   const wrap = parent.createDiv({ cls: "flex mb-2" });
   wrap.createDiv({ cls: showDayLabels ? "w-32" : "bases-view-pack-heatmap-spacer" });
   const row = wrap.createDiv({
@@ -328,15 +328,28 @@ function renderMonthLabels(parent, start, weekCount, showDayLabels) {
     attr: { style: `grid-template-columns: repeat(${weekCount}, var(--bases-view-pack-heatmap-cell-size));` },
   });
   let previousMonth = "";
+  const firstLabeledMonth = firstFullMonthKey(rangeStart);
   for (let column = 0; column < weekCount; column += 1) {
     const current = addDays(start, column * 7);
+    const currentMonth = monthKey(current);
     const month = current.toLocaleDateString(undefined, { month: "short" }).toUpperCase();
     const label = row.createDiv({ cls: "bases-view-pack-heatmap-month text-xs" });
-    if (month !== previousMonth) {
+    if (currentMonth >= firstLabeledMonth && month !== previousMonth) {
       label.setText(month);
       previousMonth = month;
     }
   }
+}
+
+function firstFullMonthKey(rangeStart) {
+  const start = new Date(rangeStart);
+  if (start.getDate() === 1) return monthKey(start);
+  return monthKey(new Date(start.getFullYear(), start.getMonth() + 1, 1));
+}
+
+function monthKey(date) {
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  return `${date.getFullYear()}-${month}`;
 }
 
 function renderLegend(parent, entriesByDate) {

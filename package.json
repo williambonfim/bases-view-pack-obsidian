@@ -1,6 +1,6 @@
 {
   "name": "bases-view-pack",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Reusable visual Bases views for the Life RPG vault.",
   "main": "main.js",
   "scripts": {
