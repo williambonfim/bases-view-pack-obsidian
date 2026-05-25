@@ -25,6 +25,7 @@ function registerLinearCalendarView(plugin, BasesViewClass, registerView) {
       const endProperty = this.getOption("endProperty", "note.completed_date");
       const detailProperty = this.getOption("detailProperty", "");
       const statusProperty = this.getOption("statusProperty", "");
+      const colorProperty = this.getOption("colorProperty", "");
       const layoutMode = this.getOption("layoutMode", "day-of-month");
       const rangeMode = this.getOption("rangeMode", "rolling-year");
       const startDate = parseLinearCalendarDate(this.getOption("startDate", ""));
@@ -53,6 +54,7 @@ function registerLinearCalendarView(plugin, BasesViewClass, registerView) {
             label: this.getValue(entry, labelProperty) || (entry.file && entry.file.basename) || "Untitled",
             detail: detailProperty ? this.getValue(entry, detailProperty) : "",
             status: statusProperty ? this.getValue(entry, statusProperty) : "",
+            color: colorProperty ? resolveLinearCalendarColor(this.getValue(entry, colorProperty)) : "",
             start,
             end,
           };
@@ -117,6 +119,10 @@ function registerLinearCalendarView(plugin, BasesViewClass, registerView) {
             const item = lane.createDiv({
               cls: `bases-view-pack-linear-calendar-event ${linearCalendarStatusClass(event.status, statusColors)}`,
             });
+            if (event.color) {
+              item.addClass("is-custom-color");
+              item.style.setProperty("--bases-view-pack-linear-event-color", event.color);
+            }
             item.style.gridColumn = `${segment.columnStart} / span ${segment.span}`;
             item.setAttribute("role", "button");
             item.setAttribute("tabindex", "0");
@@ -159,6 +165,7 @@ function registerLinearCalendarView(plugin, BasesViewClass, registerView) {
         propertyOption("endProperty", "End property", "note.completed_date"),
         propertyOption("detailProperty", "Detail property", ""),
         propertyOption("statusProperty", "Status property", "note.quest_status"),
+        propertyOption("colorProperty", "Color property", ""),
       ]),
       optionGroup("Date Range", [
         dropdownOption("rangeMode", "Range mode", "rolling-year", {
@@ -375,6 +382,32 @@ function linearCalendarStatusClass(status, statusColors) {
   if (text.includes("active") || text.includes("progress")) return "is-active";
   if (text.includes("lock") || text.includes("wait") || text.includes("hold")) return "is-blocked";
   return "is-neutral";
+}
+
+function resolveLinearCalendarColor(value) {
+  const text = String(value || "").trim().toLowerCase();
+  if (!text) return "";
+  if (/^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(text)) return text;
+  const namedColors = {
+    accent: "var(--interactive-accent)",
+    primary: "var(--interactive-accent)",
+    red: "#d1242f",
+    orange: "#d97706",
+    amber: "#d29922",
+    yellow: "#bf8700",
+    green: "#26a641",
+    teal: "#008672",
+    cyan: "#0969da",
+    blue: "#0969da",
+    purple: "#8957e5",
+    pink: "#bf3989",
+    brown: "#8b5e34",
+    gray: "#6e7781",
+    grey: "#6e7781",
+    black: "#24292f",
+    white: "#ffffff",
+  };
+  return namedColors[text] || "";
 }
 
 function rangesOverlap(startA, endA, startB, endB) {

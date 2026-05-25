@@ -31,6 +31,7 @@ function registerHeatmapCalendarView(plugin, BasesViewClass, registerView) {
       const trackType = this.getOption("trackType", "number").toLowerCase();
       const maxValueOption = toNumber(this.getOption("maxValue", ""));
       const minValueOption = toNumber(this.getOption("minValue", ""));
+      const showOverflowColor = toBooleanText(this.getOption("showOverflowColor", "false"));
       const colorScheme = this.getOption("colorScheme", "green").toLowerCase();
       const customColors = parseColorList(this.getOption("customColors", ""));
       const reverseColors = toBooleanText(this.getOption("reverseColors", "false"));
@@ -96,7 +97,7 @@ function registerHeatmapCalendarView(plugin, BasesViewClass, registerView) {
       const heatmap = lovely.createDiv({ cls: "bases-view-pack-heatmap" });
 
       if (viewMode === "month-grid") {
-        renderMonthGrid(heatmap, rangeStart, rangeEnd, entriesByDate, trackType, minValue, maxValue, showDayLabels, { shadeWeekends, shadeMonths }, this.openEntry.bind(this));
+        renderMonthGrid(heatmap, rangeStart, rangeEnd, entriesByDate, trackType, minValue, maxValue, showDayLabels, { shadeWeekends, shadeMonths, showOverflowColor }, this.openEntry.bind(this));
         if (showLegend) renderLegend(lovely, entriesByDate);
         renderDiagnostics(panel, rows, entriesByDate, dateProperty, trackProperty, trackType, days);
         return;
@@ -119,7 +120,7 @@ function registerHeatmapCalendarView(plugin, BasesViewClass, registerView) {
         body.addClass("is-no-day-labels");
       }
 
-      renderWeekGrid(body, start, end, entriesByDate, trackType, minValue, maxValue, viewMode, { shadeWeekends, shadeMonths }, this.openEntry.bind(this));
+      renderWeekGrid(body, start, end, entriesByDate, trackType, minValue, maxValue, viewMode, { shadeWeekends, shadeMonths, showOverflowColor }, this.openEntry.bind(this));
 
       if (showLegend) renderLegend(lovely, entriesByDate);
       renderDiagnostics(panel, rows, entriesByDate, dateProperty, trackProperty, trackType, days);
@@ -171,6 +172,7 @@ function registerHeatmapCalendarView(plugin, BasesViewClass, registerView) {
       optionGroup("Value Range", [
         sliderOption("minValue", "Min", 0, -100, 300, 1),
         sliderOption("maxValue", "Max", 150, 1, 300, 1),
+        toggleOption("showOverflowColor", "Show over-max color", false),
       ]),
       optionGroup("Appearance", [
         dropdownOption("shape", "Shape", "rounded", {
@@ -210,7 +212,7 @@ function renderWeekGrid(parent, start, end, entriesByDate, trackType, minValue, 
       const row = day <= end ? entriesByDate.get(dayKey) : null;
       const intensity = row ? heatLevel(row.value, minValue, maxValue) : 0;
       const clickable = Boolean(row);
-      const isOverflow = row && row.value > maxValue;
+      const isOverflow = Boolean(displayOptions.showOverflowColor && row && row.value > maxValue);
       if (row) row.isOverflow = isOverflow;
       const displayClasses = heatmapDisplayClasses(day, displayOptions);
       const valueStateClass = row && !row.hasTrackedValue ? "is-no-value-entry" : "";
@@ -254,7 +256,7 @@ function renderMonthGrid(parent, rangeStart, rangeEnd, entriesByDate, trackType,
       const row = inMonth && inRange ? entriesByDate.get(dayKey) : null;
       const intensity = row ? heatLevel(row.value, minValue, maxValue) : 0;
       const clickable = Boolean(row);
-      const isOverflow = row && row.value > maxValue;
+      const isOverflow = Boolean(displayOptions.showOverflowColor && row && row.value > maxValue);
       if (row) row.isOverflow = isOverflow;
       const displayClasses = heatmapDisplayClasses(day, displayOptions, month);
       const valueStateClass = row && !row.hasTrackedValue ? "is-no-value-entry" : "";

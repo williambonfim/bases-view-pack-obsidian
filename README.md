@@ -60,6 +60,7 @@ Option groups:
   - `shadeMonths`: lightly staggers alternating month backgrounds so month boundaries are easier to see.
 - `Value Range`
   - `minValue`, `maxValue`.
+  - `showOverflowColor`: when enabled, values above `maxValue` use the separate over-max color. When disabled, over-max values use the normal max-intensity color.
 - `Appearance`
   - `shape`: rounded, square, or circle.
   - `colorScheme`: green, primary, blue, purple, orange, red, gray, or custom.
@@ -312,10 +313,10 @@ Shows a ranged month-by-month calendar where each month is one row and each note
 
 Options:
 
-- `Data`: label property, start property, end property, detail property, and status property.
+- `Data`: label property, start property, end property, detail property, status property, and optional color property.
 - `Date Range`: rolling year, last X months, or fixed `startDate`/`endDate`, plus optional `referenceDate`.
 - `Layout & Display`: day-of-month columns or weekday-aligned columns, month headers, column headers, legend, and compact mode.
-- `Appearance`: optional status-based colors.
+- `Appearance`: optional status-based colors. Entry color values can override status colors when a color property is configured; supported values include hex colors and common names such as red, orange, yellow, green, blue, purple, pink, gray, and accent.
 
 Useful for:
 
